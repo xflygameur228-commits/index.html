@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mv Industrie - Gestionnaire de Stock</title>
+    <!-- Tailwind CSS Play CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #121212;
+            color: #e0e0e0;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between">
+
+    <!-- Top Navigation -->
+    <header class="bg-gray-900 border-b border-gray-800 py-4 px-6 shadow-md">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+            <!-- Logo & Titre -->
+            <div class="flex items-center gap-3">
+                <div class="bg-indigo-600 text-white font-bold p-2.5 rounded-xl shadow-md text-lg">
+                    MV
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-wide text-white">Mv Industrie</h1>
+                    <p class="text-xs text-gray-400">Gestionnaire de Stock & Logistique</p>
+                </div>
+            </div>
+
+            <!-- Navigation Actions & Auth Status -->
+            <div class="flex items-center gap-4 flex-wrap justify-center">
+                <nav id="main-nav" class="hidden items-center gap-2">
+                    <button data-tab="stock" class="tab-btn px-4 py-2 rounded-lg font-medium text-sm transition-all bg-indigo-600 text-white shadow">
+                        Ressources
+                    </button>
+                    <button data-tab="mouvements" class="tab-btn px-4 py-2 rounded-lg font-medium text-sm transition-all bg-gray-800 hover:bg-gray-700 text-gray-300">
+                        Mouvements
+                    </button>
+                    <button data-tab="classement" class="tab-btn px-4 py-2 rounded-lg font-medium text-sm transition-all bg-gray-800 hover:bg-gray-700 text-gray-300">
+                        Classement
+                    </button>
+                    <button data-tab="admin" id="nav-admin" class="tab-btn px-4 py-2 rounded-lg font-medium text-sm transition-all bg-gray-800 hover:bg-gray-700 text-gray-300">
+                        Administration
+                    </button>
+                </nav>
+
+                <div id="auth-header-section" class="flex items-center gap-3 border-l border-gray-700 pl-4">
+                    <!-- Injecté dynamiquement -->
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto w-full p-4 sm:p-6 flex-grow">
+
+        <!-- ÉCRAN DE VERROUILLAGE / NON CONNECTÉ -->
+        <section id="view-guest" class="py-20 text-center max-w-lg mx-auto space-y-6">
+            <div class="bg-gray-900 border border-gray-800 rounded-2xl p-8 shadow-xl">
+                <div class="w-12 h-12 bg-indigo-500/10 text-indigo-400 rounded-xl flex items-center justify-center mx-auto mb-4 text-xl">🔒</div>
+                <h2 class="text-2xl font-bold text-white mb-2">Accès Sécurisé</h2>
+                <p class="text-gray-400 text-sm mb-6">Veuillez vous identifier ou créer un compte pour accéder au terminal de gestion de stock de Mv Industrie.</p>
+                <div class="flex justify-center gap-3">
+                    <button id="btn-open-login" type="button" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-5 py-2.5 rounded-xl text-sm transition-all shadow">
+                        Se connecter
+                    </button>
+                    <button id="btn-open-register" type="button" class="bg-gray-800 hover:bg-gray-700 text-gray-300 font-medium px-5 py-2.5 rounded-xl text-sm transition-all border border-gray-700">
+                        Créer un compte
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ÉCRAN EN ATTENTE DE VALIDATION -->
+        <section id="view-pending" class="py-20 text-center max-w-lg mx-auto space-y-6 hidden">
+            <div class="bg-gray-900 border border-amber-600/30 rounded-2xl p-8 shadow-xl">
+                <div class="w-12 h-12 bg-amber-500/10 text-amber-400 rounded-xl flex items-center justify-center mx-auto mb-4 text-xl">⏳</div>
+                <h2 class="text-2xl font-bold text-white mb-2">Vérification en cours</h2>
+                <p class="text-gray-400 text-sm mb-6">
+                    Votre compte a bien été enregistré. Un administrateur doit valider votre profil et vous attribuer un rôle avant de débloquer l'accès aux services.
+                </p>
+                <button id="btn-logout-pending" type="button" class="bg-gray-800 hover:bg-gray-700 text-gray-300 font-medium px-5 py-2 rounded-xl text-sm transition-all border border-gray-700">
+                    Se déconnecter
+                </button>
+            </div>
+        </section>
+
+        <!-- CONTENU PRINCIPAL -->
+        <div id="app-content-container" class="space-y-6 hidden">
+
+            <!-- VUE 1 : GESTION DES STOCKS & RESSOURCES -->
+            <section id="tab-stock" class="space-y-6">
+                <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 shadow-lg">
+                    <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                        📦 Mouvements & Opérations de Stock
+                    </h2>
+
+                    <!-- Formulaire d'interaction stock -->
+                    <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center bg-gray-950 p-4 rounded-xl border border-gray-800">
+                        <div class="sm:col-span-5">
+                            <label class="block text-xs font-medium text-gray-400 mb-1">Ressource / Item</label>
+                            <select id="stock-item-select" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500">
+                                <!-- Rempli dynamiquement -->
+                            </select>
+                        </div>
+                        <div class="sm:col-span-3">
+                            <label class="block text-xs font-medium text-gray-400 mb-1">Type d'Action</label>
+                            <select id="stock-action-type" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500">
+                                <option value="Dépôt">Dépôt</option>
+                                <option value="Retrait Traitement">Retrait Traitement</option>
+                                <option value="Dépot post-Traitement">Dépot post-Traitement</option>
+                                <option value="Vente">Vente</option>
+                            </select>
+                        </div>
+                        <div class="sm:col-span-2">
+                            <label class="block text-xs font-medium text-gray-400 mb-1">Quantité</label>
+                            <input type="number" id="stock-item-qty" min="1" value="1" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500">
+                        </div>
+                        <div class="sm:col-span-2 flex items-end pt-2 sm:pt-0">
+                            <button id="btn-execute-action" type="button" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-4 py-2 rounded-xl text-sm transition-all shadow">
+                                Valider
+                            </button>
+                        </div>
+                    </div>
+                    <div id="employee-restriction-notice" class="text-xs text-amber-400 mt-2 hidden">
+                        ℹ️ En tant qu'Employé Actif, vous pouvez uniquement effectuer des dépôts dans le stock.
+                    </div>
+
+                    <!-- Liste du stock actuel -->
+                    <div class="mt-6">
+                        <h3 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Inventaire Actif en Stock</h3>
+                        <div id="stock-list-container" class="space-y-2">
+                            <div class="text-center py-10 text-gray-500 border border-dashed border-gray-800 rounded-xl">
+                                Le stock est vide.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VUE 2 : MOUVEMENTS (HISTORIQUE) -->
+            <section id="tab-mouvements" class="space-y-6 hidden">
+                <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 shadow-lg">
+                    <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                        📜 Journal des Mouvements
+                    </h2>
+                    <p class="text-sm text-gray-400 mb-4">Historique complet des transactions et opérations effectuées sur les stocks.</p>
+                    
+                    <div class="overflow-x-auto border border-gray-800 rounded-xl">
+                        <table class="w-full text-left text-sm text-gray-300">
+                            <thead class="bg-gray-950 text-gray-400 uppercase text-xs border-b border-gray-800">
+                                <tr>
+                                    <th class="px-4 py-3">Date / Heure</th>
+                                    <th class="px-4 py-3">Employé</th>
+                                    <th class="px-4 py-3">Rôle</th>
+                                    <th class="px-4 py-3">Action</th>
+                                    <th class="px-4 py-3">Ressource</th>
+                                    <th class="px-4 py-3 text-right">Quantité</th>
+                                </tr>
+                            </thead>
+                            <tbody id="movements-table-body" class="divide-y divide-gray-800">
+                                <!-- Généré par JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VUE 3 : CLASSEMENT -->
+            <section id="tab-classement" class="space-y-6 hidden">
+                <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 shadow-lg">
+                    <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                        🏆 Classement des Employés Actifs
+                    </h2>
+                    <p class="text-sm text-gray-400 mb-4">Suivi des performances par Récolte (dépôts directs) et Traitement (quantité redéposée après transformation).</p>
+
+                    <div class="overflow-x-auto border border-gray-800 rounded-xl">
+                        <table class="w-full text-left text-sm text-gray-300">
+                            <thead class="bg-gray-950 text-gray-400 uppercase text-xs border-b border-gray-800">
+                                <tr>
+                                    <th class="px-4 py-3">Rang</th>
+                                    <th class="px-4 py-3">Employé</th>
+                                    <th class="px-4 py-3">Rôle</th>
+                                    <th class="px-4 py-3 text-center">🌾 Récolte</th>
+                                    <th class="px-4 py-3 text-right">⚙️ Traitement</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ranking-table-body" class="divide-y divide-gray-800">
+                                <!-- Généré par JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VUE 4 : ADMINISTRATION & GESTION -->
+            <section id="tab-admin" class="space-y-6 hidden">
+                <!-- Panneau de Gestion du Catalogue (Gérant) -->
+                <div id="manager-catalog-section" class="bg-gray-900 border border-gray-800 rounded-2xl p-6 shadow-lg">
+                    <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                        ⚙️ Gestion du Catalogue (Réservé au Gérant)
+                    </h2>
+                    <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 mb-4">
+                        <input type="text" id="new-resource-name" placeholder="Nom de la ressource" class="sm:col-span-7 bg-gray-950 border border-gray-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-indigo-500">
+                        <select id="new-resource-category" class="sm:col-span-3 bg-gray-950 border border-gray-700 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-indigo-500">
+                            <option value="Légal">Légal</option>
+                            <option value="Illégal">Illégal</option>
+                        </select>
+                        <button id="btn-add-resource" type="button" class="sm:col-span-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium py-2 rounded-xl transition-all">Ajouter</button>
+                    </div>
+
+                    <div class="overflow-x-auto border border-gray-800 rounded-xl">
+                        <table class="w-full text-left text-sm text-gray-300">
+                            <thead class="bg-gray-950 text-gray-400 uppercase text-xs border-b border-gray-800">
+                                <tr>
+                                    <th class="px-4 py-3">Ressource</th>
+                                    <th class="px-4 py-3">Catégorie</th>
+                                    <th class="px-4 py-3 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="catalog-table-body" class="divide-y divide-gray-800">
+                                <!-- Généré par JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Gestion des Comptes Employés & Validations -->
+                <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 shadow-lg">
+                    <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                        👥 Gestion et Validation des Comptes
+                    </h2>
+                    <div class="overflow-x-auto border border-gray-800 rounded-xl">
+                        <table class="w-full text-left text-sm text-gray-300">
+                            <thead class="bg-gray-950 text-gray-400 uppercase text-xs border-b border-gray-800">
+                                <tr>
+                                    <th class="px-4 py-3">Nom d'utilisateur</th>
+                                    <th class="px-4 py-3">Statut / Rôle Actuel</th>
+                                    <th class="px-4 py-3 text-right">Actions (Gérant)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="employees-table-body" class="divide-y divide-gray-800">
+                                <!-- Généré par JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 border-t border-gray-800 py-4 text-center text-xs text-gray-500">
+        Mv Industrie - Gestionnaire de Stock &copy; 2026
+    </footer>
+
+    <!-- MODAL AUTH -->
+    <div id="auth-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+            <h3 id="modal-title" class="text-lg font-bold text-white mb-4">Connexion Employé</h3>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-medium text-gray-400 mb-1">Identifiant / Nom</label>
+                    <input type="text" id="auth-username" class="w-full bg-gray-950 border border-gray-700 rounded-xl px-3.5 py-2 text-white text-sm focus:outline-none focus:border-indigo-500" placeholder="Ex: GerantPrincipal">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-400 mb-1">Mot de passe</label>
+                    <input type="password" id="auth-password" class="w-full bg-gray-950 border border-gray-700 rounded-xl px-3.5 py-2 text-white text-sm focus:outline-none focus:border-indigo-500" placeholder="••••••••">
+                </div>
+                <div id="modal-actions" class="flex justify-end gap-3 pt-2">
+                    <button id="btn-close-modal" type="button" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-xl text-sm">Annuler</button>
+                    <button id="btn-submit-auth" type="button" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm">Se connecter</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL MESSAGE -->
+    <div id="message-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 w-full max-w-sm shadow-2xl text-center space-y-4">
+            <p id="message-text" class="text-sm text-gray-200"></p>
+            <button id="btn-close-msg" type="button" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-5 py-2 rounded-xl text-sm transition-all">OK</button>
+        </div>
+    </div>
+
+    <!-- Script Application -->
+    <script>
+        let modalMode = 'login'; // 'login' ou 'register'
+
+        let employees = JSON.parse(localStorage.getItem('mv_employees'));
+        if (!employees || !Array.isArray(employees) || employees.length === 0 || !employees.some(e => e.role === "Gérant")) {
+            employees = [
+                { username: "GerantPrincipal", password: "123", role: "Gérant" }
+            ];
+            localStorage.setItem('mv_employees', JSON.stringify(employees));
+        }
+
+        let catalog = JSON.parse(localStorage.getItem('mv_catalog'));
+        if (!catalog || !Array.isArray(catalog)) {
+            catalog = [
+                { name: "Diamant Double", category: "Illégal" },
+                { name: "Fer pur", category: "Légal" }
+            ];
+            localStorage.setItem('mv_catalog', JSON.stringify(catalog));
+        }
+
+        let currentUser = JSON.parse(localStorage.getItem('mv_current_user'));
+        if (!currentUser || !employees.some(e => e.username === currentUser.username)) {
+            currentUser = employees.find(e => e.role === "Gérant") || employees[0];
+            localStorage.setItem('mv_current_user', JSON.stringify(currentUser));
+        }
+
+        let currentStock = JSON.parse(localStorage.getItem('mv_current_stock')) || [];
+        if (!Array.isArray(currentStock)) currentStock = [];
+        
+        let movementsLog = JSON.parse(localStorage.getItem('mv_movements')) || [];
+        if (!Array.isArray(movementsLog)) movementsLog = [];
+
+        function showAppMessage(msg) {
+            document.getElementById('message-textinnerText' in document.getElementById('message-text') ? 'innerText' : 'textContent').innerText = msg;
+            document.getElementById('message-modal').classList.remove('hidden');
+        }
+
+        function saveData() {
+            localStorage.setItem('mv_catalog', JSON.stringify(catalog));
+            localStorage.setItem('mv_employees', JSON.stringify(employees));
+            localStorage.setItem('mv_current_user', JSON.stringify(currentUser));
+            localStorage.setItem('mv_current_stock', JSON.stringify(currentStock));
+            localStorage.setItem('mv_movements', JSON.stringify(movementsLog));
+        }
+
+        function initApp() {
+            renderAuthHeader();
+            renderCatalogSelect();
+            renderCatalogTable();
+            renderEmployeesTable();
+            renderStockList();
+            renderMovementsTable();
+            renderRankingTable();
+            updateAppViewMode();
+        }
+
+        function updateAppViewMode() {
+            const guestView = document.getElementById('view-guest');
+            const pendingView = document.getElementById('view-pending');
+            const appContent = document.getElementById('app-content-container');
+            const mainNav = document.getElementById('main-nav');
+            const managerSection = document.getElementById('manager-catalog-section');
+            const navAdmin = document.getElementById('nav-admin');
+
+            guestView.classList.add('hidden');
+            pendingView.classList.add('hidden');
+            appContent.classList.add('hidden');
+            mainNav.classList.add('hidden');
+
+            if (!currentUser) {
+                guestView.classList.remove('hidden');
+            } else if (currentUser.role === "Utilisateur à confirmer") {
+                pendingView.classList.remove('hidden');
+            } else {
+                appContent.classList.remove('hidden');
+                mainNav.classList.remove('hidden');
+                mainNav.classList.add('flex');
+
+                if (currentUser.role === "Gérant") {
+                    managerSection.classList.remove('hidden');
+                    navAdmin.style.display = "block";
+                } else {
+                    managerSection.classList.add('hidden');
+                    navAdmin.style.display = "none";
+                }
+                
+                applyRoleRestrictions();
+            }
+        }
+
+        function applyRoleRestrictions() {
+            const actionSelect = document.getElementById('stock-action-type');
+            const restrictionNotice = document.getElementById('employee-restriction-notice');
+            
+            if (currentUser && currentUser.role === "Employé Actif") {
+                actionSelect.value = "Dépôt";
+                Array.from(actionSelect.options).forEach(opt => {
+                    if (opt.value !== "Dépôt") opt.disabled = true;
+                });
+                restrictionNotice.classList.remove('hidden');
+            } else {
+                Array.from(actionSelect.options).forEach(opt => {
+                    opt.disabled = false;
+                });
+                restrictionNotice.classList.add('hidden');
+            }
+        }
+
+        function switchTab(tab) {
+            const tabs = ['stock', 'mouvements', 'classement', 'admin'];
+            tabs.forEach(t => {
+                const el = document.getElementById(`tab-${t}`);
+                if (el) el.classList.add('hidden');
+            });
+
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.className = "tab-btn px-4 py-2 rounded-lg font-medium text-sm transition-all bg-gray-800 hover:bg-gray-700 text-gray-300";
+            });
+
+            const activeEl = document.getElementById(`tab-${tab}`);
+            const activeBtn = document.querySelector(`.tab-btn[data-tab="${tab}"]`);
+            if (activeEl) activeEl.classList.remove('hidden');
+            if (activeBtn) activeBtn.className = "tab-btn px-4 py-2 rounded-lg font-medium text-sm transition-all bg-indigo-600 text-white shadow";
+
+            if (tab === 'mouvements') renderMovementsTable();
+            if (tab === 'classement') renderRankingTable();
+            if (tab === 'admin') {
+                renderCatalogTable();
+                renderEmployeesTable();
+            }
+        }
+
+        function renderAuthHeader() {
+            const container = document.getElementById('auth-header-section');
+            if (!container) return;
+            if (currentUser) {
+                container.innerHTML = `
+                    <div class="text-right">
+                        <span class="block text-xs text-indigo-400 font-semibold">${currentUser.role || 'Employé'}</span>
+                        <span class="text-sm font-medium text-white">${currentUser.username || 'Inconnu'}</span>
+                    </div>
+                    <button id="btn-logout" type="button" class="bg-gray-800 hover:bg-red-900/50 text-gray-300 hover:text-white px-3 py-1.5 rounded-xl text-xs transition-all border border-gray-700">
+                        Déconnexion
+                    </button>
+                `;
+                const btnLogout = document.getElementById('btn-logout');
+                if (btnLogout) btnLogout.addEventListener('click', logout);
+            } else {
+                container.innerHTML = `
+                    <button id="btn-header-login" type="button" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all shadow">
+                        Connexion
+                    </button>
+                `;
+                const btnHeaderLogin = document.getElementById('btn-header-login');
+                if (btnHeaderLogin) btnHeaderLogin.addEventListener('click', () => openAuthModal('login'));
+            }
+        }
+
+        function openAuthModal(mode) {
+            modalMode = mode;
+            document.getElementById('modal-title').innerText = (mode === 'login') ? "Connexion Employé" : "Créer un compte employé";
+            document.getElementById('btn-submit-auth').innerText = (mode === 'login') ? "Se connecter" : "Créer";
+            document.getElementById('auth-modal').classList.remove('hidden');
+        }
+
+        function closeAuthModal() {
+            document.getElementById('auth-modal').classList.add('hidden');
+            document.getElementById('auth-username').value = '';
+            document.getElementById('auth-password').value = '';
+        }
+
+        function logout() {
+            currentUser = null;
+            saveData();
+            initApp();
+            showAppMessage("Déconnexion réussie.");
+        }
+
+        function renderCatalogSelect() {
+            const select = document.getElementById('stock-item-select');
+            if (!select) return;
+            select.innerHTML = '';
+            if (catalog.length === 0) {
+                select.innerHTML = '<option value="">Aucune ressource disponible</option>';
+                return;
+            }
+            catalog.forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = item.name;
+                opt.textContent = `${item.name} (${item.category})`;
+                select.appendChild(opt);
+            });
+        }
+
+        function renderCatalogTable() {
+            const tbody = document.getElementById('catalog-table-body');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            if (catalog.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="3" class="px-4 py-6 text-center text-gray-500">Aucune ressource dans le catalogue.</td></tr>`;
+                return;
+            }
+            catalog.forEach((item, index) => {
+                const tr = document.createElement('tr');
+                tr.className = "border-b border-gray-800 hover:bg-gray-800/40";
+                tr.innerHTML = `
+                    <td class="px-4 py-3 font-medium text-white">${item.name || ''}</td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-0.5 rounded text-xs ${item.category === 'Illégal' ? 'bg-red-950 text-red-400 border border-red-900/50' : 'bg-emerald-950 text-emerald-400 border border-emerald-900/50'}">
+                            ${item.category || 'Légal'}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-right">
+                        <button type="button" data-index="${index}" class="btn-del-resource bg-red-900/40 hover:bg-red-900 text-red-300 px-2.5 py-1 rounded-lg text-xs transition-all">Supprimer</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.querySelectorAll('.btn-del-resource').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const idx = parseInt(e.target.getAttribute('data-index'));
+                    catalog.splice(idx, 1);
+                    saveData();
+                    renderCatalogTable();
+                    renderCatalogSelect();
+                    showAppMessage("Ressource supprimée du catalogue.");
+                });
+            });
+        }
+
+        function renderEmployeesTable() {
+            const tbody = document.getElementById('employees-table-body');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            employees.forEach((emp) => {
+                const tr = document.createElement('tr');
+                tr.className = "border-b border-gray-800 hover:bg-gray-800/40";
+                tr.innerHTML = `
+                    <td class="px-4 py-3 font-medium text-white">${emp.username || ''} ${emp.username === currentUser?.username ? '(Vous)' : ''}</td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-0.5 rounded text-xs ${emp.role === 'Gérant' ? 'bg-indigo-950 text-indigo-400 border border-indigo-900/50' : emp.role === 'Employé Actif' ? 'bg-blue-950 text-blue-400 border border-blue-900/50' : 'bg-amber-950 text-amber-400 border border-amber-900/50'}">
+                            ${emp.role || 'Utilisateur à confirmer'}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-right space-x-2">
+                        ${emp.role === 'Utilisateur à confirmer' ? `
+                            <button type="button" data-user="${emp.username}" class="btn-validate-user bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1 rounded-lg text-xs transition-all">Valider en Employé</button>
+                        ` : ''}
+                        ${emp.role !== 'Gérant' ? `
+                            <button type="button" data-user="${emp.username}" class="btn-delete-user bg-red-900/40 hover:bg-red-900 text-red-300 px-2.5 py-1 rounded-lg text-xs transition-all">Supprimer</button>
+                        ` : ''}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.querySelectorAll('.btn-validate-user').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const username = e.target.getAttribute('data-user');
+                    const targetEmp = employees.find(item => item.username === username);
+                    if (targetEmp) {
+                        targetEmp.role = "Employé Actif";
+                        saveData();
+                        renderEmployeesTable();
+                        showAppMessage(`Compte de ${username} validé en tant qu'Employé Actif.`);
+                    }
+                });
+            });
+
+            document.querySelectorAll('.btn-delete-user').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const username = e.target.getAttribute('data-user');
+                    employees = employees.filter(item => item.username !== username);
+                    saveData();
+                    renderEmployeesTable();
+                    showAppMessage(`Compte de ${username} supprimé.`);
+                });
+            });
+        }
+
+        function renderStockList() {
+            const container = document.getElementById('stock-list-container');
+            if (!container) return;
+            if (currentStock.length === 0) {
+                container.innerHTML = `<div class="text-center py-10 text-gray-500 border border-dashed border-gray-800 rounded-xl">Le stock est vide.</div>`;
+                return;
+            }
+            container.innerHTML = '';
+            currentStock.forEach((stockItem) => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = "flex justify-between items-center bg-gray-950 p-3.5 rounded-xl border border-gray-800";
+                itemDiv.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center font-bold text-xs">📦</div>
+                        <div>
+                            <h4 class="text-sm font-semibold text-white">${stockItem.name}</h4>
+                            <span class="text-xs text-gray-400">Catégorie: ${stockItem.category || 'Standard'}</span>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-base font-bold text-indigo-400">${stockItem.qty}</span>
+                        <span class="text-xs text-gray-400 block">Unités</span>
+                    </div>
+                `;
+                container.appendChild(itemDiv);
+            });
+        }
+
+        function renderMovementsTable() {
+            const tbody = document.getElementById('movements-table-body');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            if (movementsLog.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-6 text-center text-gray-500">Aucun mouvement enregistré.</td></tr>`;
+                return;
+            }
+            [...movementsLog].reverse().forEach(m => {
+                const tr = document.createElement('tr');
+                tr.className = "border-b border-gray-800 hover:bg-gray-800/40";
+                tr.innerHTML = `
+                    <td class="px-4 py-3 text-xs text-gray-400">${m.date}</td>
+                    <td class="px-4 py-3 font-medium text-white">${m.username}</td>
+                    <td class="px-4 py-3"><span class="text-xs text-gray-400">${m.role}</span></td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-0.5 rounded text-xs ${m.action === 'Dépôt' || m.action === 'Dépot post-Traitement' ? 'bg-emerald-950 text-emerald-400 border border-emerald-900/50' : m.action === 'Vente' ? 'bg-purple-950 text-purple-400 border border-purple-900/50' : 'bg-amber-950 text-amber-400 border border-amber-900/50'}">
+                            ${m.action}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-gray-300">${m.resource}</td>
+                    <td class="px-4 py-3 text-right font-semibold text-white">${m.qty}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderRankingTable() {
+            const tbody = document.getElementById('ranking-table-body');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            // Calcul des scores par utilisateur actif
+            let scores = {};
+            employees.forEach(emp => {
+                if (emp.role !== "Utilisateur à confirmer") {
+                    scores[emp.username] = { username: emp.username, role: emp.role, harvest: 0, processing: 0 };
+                }
+            });
+
+            movementsLog.forEach(m => {
+                if (scores[m.username]) {
+                    if (m.action === "Dépôt") {
+                        scores[m.username].harvest += parseInt(m.qty) || 0;
+                    } else if (m.action === "Dépot post-Traitement") {
+                        scores[m.username].processing += parseInt(m.qty) || 0;
+                    }
+                }
+            });
+
+            let rankingArray = Object.values(scores).sort((a, b) => (b.harvest + b.processing) - (a.harvest + a.processing));
+
+            if (rankingArray.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="px-4 py-6 text-center text-gray-500">Aucun employé dans le classement.</td></tr>`;
+                return;
+            }
+
+            rankingArray.forEach((userScore, idx) => {
+                const tr = document.createElement('tr');
+                tr.className = "border-b border-gray-800 hover:bg-gray-800/40";
+                tr.innerHTML = `
+                    <td class="px-4 py-3 font-bold text-indigo-400">#${idx + 1}</td>
+                    <td class="px-4 py-3 font-medium text-white">${userScore.username}</td>
+                    <td class="px-4 py-3"><span class="text-xs text-gray-400">${userScore.role}</span></td>
+                    <td class="px-4 py-3 text-center font-semibold text-emerald-400">${userScore.harvest}</td>
+                    <td class="px-4 py-3 text-right font-semibold text-amber-400">${userScore.processing}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // --- Event Listeners Initiaux ---
+        document.addEventListener('DOMContentLoaded', () => {
+            initApp();
+
+            // Gestion des onglets
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const tab = btn.getAttribute('data-tab');
+                    switchTab(tab);
+                });
+            });
+
+            // Boutons d'authentification ouverture modale
+            document.getElementById('btn-open-login')?.addEventListener('click', () => openAuthModal('login'));
+            document.getElementById('btn-open-register')?.addEventListener('click', () => openAuthModal('register'));
+            document.getElementById('btn-close-modal')?.addEventListener('click', closeAuthModal);
+            document.getElementById('btn-close-msg')?.addEventListener('click', () => {
+                document.getElementById('message-modal').classList.add('hidden');
+            });
+            document.getElementById('btn-logout-pending')?.addEventListener('click', logout);
+
+            // Soumission connexion / inscription
+            document.getElementById('btn-submit-auth')?.addEventListener('click', () => {
+                const uInput = document.getElementById('auth-username').value.trim();
+                const pInput = document.getElementById('auth-password').value.trim();
+
+                if (!uInput || !pInput) {
+                    showAppMessage("Veuillez remplir tous les champs.");
+                    return;
+                }
+
+                if (modalMode === 'login') {
+                    const found = employees.find(e => e.username === uInput && e.password === pInput);
+                    if (found) {
+                        currentUser = found;
+                        saveData();
+                        closeAuthModal();
+                        initApp();
+                        showAppMessage(`Connexion réussie en tant que ${found.role}.`);
+                    } else {
+                        showAppMessage("Identifiant ou mot de passe incorrect.");
+                    }
+                } else {
+                    // Inscription
+                    if (employees.some(e => e.username === uInput)) {
+                        showAppMessage("Ce nom d'utilisateur est déjà pris.");
+                        return;
+                    }
+                    const newEmp = { username: uInput, password: pInput, role: "Utilisateur à confirmer" };
+                    employees.push(newEmp);
+                    currentUser = newEmp;
+                    saveData();
+                    closeAuthModal();
+                    initApp();
+                    showAppMessage("Compte créé avec succès ! En attente de validation par un gérant.");
+                }
+            });
+
+            // Ajout de ressource (Gérant)
+            document.getElementById('btn-add-resource')?.addEventListener('click', () => {
+                const name = document.getElementById('new-resource-name').value.trim();
+                const category = document.getElementById('new-resource-category').value;
+
+                if (!name) {
+                    showAppMessage("Veuillez saisir un nom de ressource.");
+                    return;
+                }
+
+                if (catalog.some(item => item.name.toLowerCase() === name.toLowerCase())) {
+                    showAppMessage("Cette ressource existe déjà dans le catalogue.");
+                    return;
+                }
+
+                catalog.push({ name, category });
+                document.getElementById('new-resource-name').value = '';
+                saveData();
+                renderCatalogTable();
+                renderCatalogSelect();
+                showAppMessage("Ressource ajoutée au catalogue.");
+            });
+
+            // Exécution d'une action de stock
+            document.getElementById('btn-execute-action')?.addEventListener('click', () => {
+                const itemName = document.getElementById('stock-item-select').value;
+                const actionType = document.getElementById('stock-action-type').value;
+                const qtyInput = parseInt(document.getElementById('stock-item-qty').value) || 0;
+
+                if (!itemName) {
+                    showAppMessage("Veuillez sélectionner une ressource valide.");
+                    return;
+                }
+
+                if (qtyInput <= 0) {
+                    showAppMessage("La quantité doit être supérieure à 0.");
+                    return;
+                }
+
+                // Vérification rôle Employé Actif
+                if (currentUser.role === "Employé Actif" && actionType !== "Dépôt") {
+                    showAppMessage("Accès restreint : En tant qu'Employé Actif, vous pouvez uniquement effectuer des dépôts.");
+                    return;
+                }
+
+                const catalogItem = catalog.find(c => c.name === itemName);
+                const category = catalogItem ? catalogItem.category : "Légal";
+
+                // Gestion logique du stock actuel
+                let stockEntry = currentStock.find(s => s.name === itemName);
+
+                if (actionType === "Dépôt" || actionType === "Dépot post-Traitement") {
+                    if (!stockEntry) {
+                        stockEntry = { name: itemName, category, qty: 0 };
+                        currentStock.push(stockEntry);
+                    }
+                    stockEntry.qty += qtyInput;
+                } else if (actionType === "Retrait Traitement" || actionType === "Vente") {
+                    if (!stockEntry || stockEntry.qty < qtyInput) {
+                        showAppMessage("Stock insuffisant pour effectuer cette opération.");
+                        return;
+                    }
+                    stockEntry.qty -= qtyInput;
+                    if (stockEntry.qty === 0) {
+                        currentStock = currentStock.filter(s => s.name !== itemName);
+                    }
+                }
+
+                // Enregistrement dans le journal des mouvements
+                const now = new Date();
+                const dateStr = now.toLocaleDateString() + ' ' + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                movementsLog.push({
+                    date: dateStr,
+                    username: currentUser.username,
+                    role: currentUser.role,
+                    action: actionType,
+                    resource: itemName,
+                    qty: qtyInput
+                });
+
+                saveData();
+                renderStockList();
+                renderMovementsTable();
+                renderRankingTable();
+                showAppMessage("Opération de stock enregistrée avec succès !");
+            });
+        });
+    </script>
+</body>
+</html>
